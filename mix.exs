@@ -12,7 +12,10 @@ defmodule ClaudePlans.MixProject do
       deps: deps(),
       releases: releases(),
       name: "ClaudePlans",
-      description: "Standalone viewer for Claude Code plans and project memory"
+      description: "Standalone viewer for Claude Code plans and project memory",
+      source_url: "https://github.com/jhlee111/claude_plans",
+      homepage_url: "https://github.com/jhlee111/claude_plans",
+      docs: docs()
     ]
   end
 
@@ -35,7 +38,16 @@ defmodule ClaudePlans.MixProject do
       {:mdex, "~> 0.10"},
       {:file_system, "~> 1.0"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:burrito, "~> 1.5", only: :prod}
+      {:burrito, "~> 1.5", only: :prod},
+      {:ex_doc, "~> 0.35", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: ["README.md"],
+      source_ref: "main"
     ]
   end
 
