@@ -9,12 +9,9 @@ on:
 permissions:
   contents: write
 
-env:
-  SIGNING_IDENTITY: "Developer ID Application: Jung Hoon Lee (LPT442F2X5)"
-
 jobs:
   build-and-release:
-    runs-on: [self-hosted, macOS]
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
@@ -30,19 +27,17 @@ jobs:
             echo "is_tag=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Install Erlang & Elixir
+        run: |
+          brew install erlang elixir zig xz
+          mix local.hex --force
+          mix local.rebar --force
+
       - name: Install dependencies
         run: MIX_ENV=prod mix deps.get
 
       - name: Build macOS ARM binary
         run: BURRITO_TARGET=macos_arm MIX_ENV=prod mix release
-
-      - name: Sign binary
-        run: |
-          codesign --force --sign "${{ env.SIGNING_IDENTITY }}" \
-            --options runtime --timestamp \
-            burrito_out/claude_plans_macos_arm
-
-          codesign --verify --verbose burrito_out/claude_plans_macos_arm
 
       - name: Create Release
         if: steps.version.outputs.is_tag == 'true'
@@ -50,3 +45,41 @@ jobs:
         with:
           generate_release_notes: true
           files: burrito_out/claude_plans_macos_arm
+
+      - name: Update Homebrew formula
+        if: steps.version.outputs.is_tag == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          SHA=$(shasum -a 256 burrito_out/claude_plans_macos_arm | awk '{print $1}')
+
+          FORMULA='class ClaudePlans < Formula
+            desc "Standalone viewer for Claude Code plans and project memory"
+            homepage "https://github.com/jhlee111/claude_plans"
+            url "https://github.com/jhlee111/claude_plans/releases/download/v'"${VERSION}"'/claude_plans_macos_arm"
+            sha256 "'"${SHA}"'"
+            version "'"${VERSION}"'"
+            license "MIT"
+
+            depends_on arch: :arm64
+            depends_on :macos
+
+            def install
+              bin.install "claude_plans_macos_arm" => "claude-plans"
+            end
+
+            test do
+              assert_predicate bin/"claude-plans", :executable?
+            end
+          end'
+
+          cd /tmp
+          git clone https://x-access-token:${GH_TOKEN}@github.com/jhlee111/homebrew-tap.git
+          cd homebrew-tap
+          echo "$FORMULA" > Formula/claude-plans.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/claude-plans.rb
+          git commit -m "Update claude-plans to v${VERSION}"
+          git push

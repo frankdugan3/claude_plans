@@ -20,16 +20,22 @@ Browse `~/.claude/plans/` and `~/.claude/projects/*/memory/` in a clean, searcha
 
 ## Quick Start
 
-### Standalone Binary (recommended)
+### Homebrew (recommended)
 
-Download the latest binary from [Releases](https://github.com/jhlee111/claude_plans/releases):
+```bash
+brew tap jhlee111/tap
+brew install claude-plans
+claude-plans
+# Opens http://localhost:4002 in your browser
+```
+
+### Direct Download
 
 ```bash
 # macOS Apple Silicon
 curl -L -o claude-plans https://github.com/jhlee111/claude_plans/releases/download/v0.1.3/claude_plans_macos_arm
 chmod +x claude-plans
 ./claude-plans
-# Opens http://localhost:4002 in your browser
 ```
 
 ### From Source
