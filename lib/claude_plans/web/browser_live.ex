@@ -41,7 +41,8 @@ defmodule ClaudePlans.Web.BrowserLive do
 
     socket =
       case tab do
-        :projects when is_nil(socket.assigns.selected_project) and socket.assigns.projects != [] ->
+        :projects
+        when is_nil(socket.assigns.selected_project) and socket.assigns.projects != [] ->
           [first | _] = socket.assigns.projects
           load_project(socket, first.dir_name)
 
@@ -71,7 +72,8 @@ defmodule ClaudePlans.Web.BrowserLive do
   end
 
   def handle_event("select_file", %{"path" => rel_path}, socket) do
-    full_path = Path.join([socket.assigns.projects_dir, socket.assigns.selected_project, rel_path])
+    full_path =
+      Path.join([socket.assigns.projects_dir, socket.assigns.selected_project, rel_path])
 
     case File.read(full_path) do
       {:ok, content} ->

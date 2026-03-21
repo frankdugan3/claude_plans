@@ -66,8 +66,12 @@ defmodule ClaudePlans.Watcher do
     if String.ends_with?(path, ".md") do
       state =
         case Map.get(state.debounce_timers, path) do
-          nil -> state
-          ref -> Process.cancel_timer(ref); state
+          nil ->
+            state
+
+          ref ->
+            Process.cancel_timer(ref)
+            state
         end
 
       ref = Process.send_after(self(), {:debounced_notify, path}, @debounce_ms)
