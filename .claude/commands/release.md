@@ -120,22 +120,47 @@ git push --tags
 ```
 
 This triggers the GitHub Actions release workflow which builds
-standalone binaries for macOS ARM and Intel.
+the standalone binary for macOS ARM.
 
 ### 8. Verify release
 
 ```bash
 # Wait for release CI to complete
 gh run list --workflow="Build & Release" --limit 1
+gh run watch <run-id>
 
-# Verify release was created with binaries
+# Verify release was created with binary
 gh release view v<version>
 ```
 
-### 9. Report
+### 9. Update Homebrew tap
+
+```bash
+# Get SHA256 of the released binary
+curl -sL https://github.com/jhlee111/claude_plans/releases/download/v<version>/claude_plans_macos_arm | shasum -a 256
+
+# Update the formula
+cd /tmp && rm -rf homebrew-tap
+git clone https://github.com/jhlee111/homebrew-tap.git
+cd homebrew-tap
+```
+
+Update `Formula/claude-plans.rb`:
+- `version` → new version
+- `sha256` → new hash
+- `url` → new download URL
+
+```bash
+git add Formula/claude-plans.rb
+git commit -m "Update claude-plans to v<version>"
+git push origin main
+```
+
+### 10. Report
 
 Show the user:
 - Release version
 - Release URL on GitHub
 - CHANGELOG entry
 - CI build status
+- Homebrew formula updated?
