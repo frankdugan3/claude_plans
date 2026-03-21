@@ -266,6 +266,14 @@ defmodule ClaudePlans.Web.Layouts do
             this.pushEvent("toggle_versions", {});
             e.preventDefault();
             break;
+          case 'x':
+            this.pushEvent("kb_delete", {});
+            e.preventDefault();
+            break;
+          case 'e':
+            this.pushEvent("kb_edit", {});
+            e.preventDefault();
+            break;
           case '?':
             this.pushEvent("kb_help", {});
             e.preventDefault();
@@ -273,6 +281,14 @@ defmodule ClaudePlans.Web.Layouts do
         }
       };
       window.addEventListener('keydown', this.handleKeyDown);
+      this.handleEvent("confirm_delete", ({path}) => {
+        if (confirm("Delete " + path + "?")) {
+          this.pushEvent("delete_file", {path: path});
+        }
+      });
+      this.handleEvent("open_editor", ({url}) => {
+        window.location.href = url;
+      });
     },
     destroyed() {
       window.removeEventListener('keydown', this.handleKeyDown);

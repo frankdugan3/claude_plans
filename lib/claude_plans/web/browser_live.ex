@@ -325,6 +325,26 @@ defmodule ClaudePlans.Web.BrowserLive do
     {:noreply, assign(socket, show_help: !socket.assigns.show_help)}
   end
 
+  def handle_event("kb_delete", _params, socket) do
+    case selected_file_path(socket) do
+      nil -> {:noreply, socket}
+      path -> {:noreply, push_event(socket, "confirm_delete", %{path: path})}
+    end
+  end
+
+  def handle_event("kb_edit", _params, socket) do
+    case selected_file_path(socket) do
+      nil ->
+        {:noreply, socket}
+
+      path ->
+        case editor_url(path) do
+          nil -> {:noreply, socket}
+          url -> {:noreply, push_event(socket, "open_editor", %{url: url})}
+        end
+    end
+  end
+
   def handle_event("delete_file", %{"path" => path}, socket) do
     File.rm(path)
 
@@ -484,6 +504,8 @@ defmodule ClaudePlans.Web.BrowserLive do
             <dt><kbd>Ctrl+d</kbd> <kbd>Ctrl+u</kbd></dt><dd>Scroll content down / up</dd>
             <dt><kbd>d</kbd></dt><dd>Toggle diff view</dd>
             <dt><kbd>v</kbd></dt><dd>Toggle version history</dd>
+            <dt><kbd>e</kbd></dt><dd>Open in editor (PLUG_EDITOR)</dd>
+            <dt><kbd>x</kbd></dt><dd>Delete selected file</dd>
             <dt><kbd>1</kbd> <kbd>2</kbd></dt><dd>Plans / Projects tab</dd>
             <dt><kbd>?</kbd></dt><dd>Toggle this help</dd>
           </dl>
@@ -893,6 +915,25 @@ defmodule ClaudePlans.Web.BrowserLive do
     cond do
       bytes >= 1024 -> "#{Float.round(bytes / 1024, 1)} KB"
       true -> "#{bytes} B"
+    end
+  end
+
+  defp selected_file_path(socket) do
+    case socket.assigns.active_tab do
+      :plans ->
+        case Enum.find(socket.assigns.plans, &(&1.filename == socket.assigns.selected)) do
+          nil -> nil
+          plan -> plan.path
+        end
+
+      :projects ->
+        if socket.assigns.selected_project && socket.assigns.selected_file do
+          Path.join([
+            socket.assigns.projects_dir,
+            socket.assigns.selected_project,
+            socket.assigns.selected_file
+          ])
+        end
     end
   end
 
