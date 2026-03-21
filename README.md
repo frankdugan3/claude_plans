@@ -100,11 +100,10 @@ BURRITO_TARGET=macos_arm MIX_ENV=prod mix release
 # Output in burrito_out/
 ```
 
-> **Note:** Cross-compilation is not supported due to native NIF dependencies (MDEx/Rust).
-> Each target must be built on its matching architecture. The GitHub Actions CI handles this
-> automatically using `macos-14` (ARM) and `macos-13` (Intel) runners.
+> **Note:** Only macOS ARM (Apple Silicon) has been tested. Cross-compilation is not supported
+> due to native NIF dependencies (MDEx/Rust) — each target must be built on its matching platform.
 
-Linux and Windows targets are defined but commented out in `mix.exs` (untested). Uncomment and build on the matching platform with:
+Linux and Windows targets are defined but commented out in `mix.exs` (untested). Uncomment and build on the matching platform:
 
 ```bash
 BURRITO_TARGET=linux_intel MIX_ENV=prod mix release
