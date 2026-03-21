@@ -8,7 +8,7 @@ defmodule ClaudePlans.Web.Layouts do
   @css File.read!(css_path)
 
   phoenix_js_paths =
-    for app <- ~w(phoenix phoenix_live_view)a do
+    for app <- ~w(phoenix phoenix_html phoenix_live_view)a do
       path = Application.app_dir(app, ["priv", "static", "#{app}.js"])
       Module.put_attribute(__MODULE__, :external_resource, path)
       path
