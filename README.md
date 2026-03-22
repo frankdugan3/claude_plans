@@ -85,6 +85,15 @@ PLANS_DIR=/path/to/plans ./claude_plans_macos_arm
 
 # Both
 PORT=8080 NO_BROWSER=1 ./claude_plans_macos_arm
+
+# Open files in VS Code
+PLUG_EDITOR="vscode://file/__FILE__:__LINE__" ./claude_plans_macos_arm
+
+# Open files in Cursor
+PLUG_EDITOR="cursor://file/__FILE__:__LINE__" ./claude_plans_macos_arm
+
+# Open files in Zed
+PLUG_EDITOR="zed://open/__FILE__:__LINE__" ./claude_plans_macos_arm
 ```
 
 ## Building from Source
