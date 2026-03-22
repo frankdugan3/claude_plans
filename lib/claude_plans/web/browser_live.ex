@@ -325,6 +325,72 @@ defmodule ClaudePlans.Web.BrowserLive do
     {:noreply, assign(socket, show_help: !socket.assigns.show_help)}
   end
 
+  def handle_event("kb_delete", _params, socket) do
+    case selected_file_path(socket) do
+      nil -> {:noreply, socket}
+      path -> {:noreply, push_event(socket, "confirm_delete", %{path: path})}
+    end
+  end
+
+  def handle_event("kb_edit", _params, socket) do
+    case selected_file_path(socket) do
+      nil ->
+        {:noreply, socket}
+
+      path ->
+        case editor_url(path) do
+          nil -> {:noreply, socket}
+          url -> {:noreply, push_event(socket, "open_editor", %{url: url})}
+        end
+    end
+  end
+
+  def handle_event("delete_file", %{"path" => path}, socket) do
+    File.rm(path)
+
+    socket =
+      case socket.assigns.active_tab do
+        :plans ->
+          plans = Watcher.list_plans()
+
+          {selected, html} =
+            case plans do
+              [first | _] -> {first.filename, RenderCache.render(File.read!(first.path))}
+              [] -> {nil, nil}
+            end
+
+          assign(socket, plans: plans, selected: selected, html: html)
+
+        :projects ->
+          files =
+            list_project_files(socket.assigns.projects_dir, socket.assigns.selected_project)
+
+          {selected_file, file_html} =
+            case files do
+              [first | _] ->
+                full =
+                  Path.join([
+                    socket.assigns.projects_dir,
+                    socket.assigns.selected_project,
+                    first.rel_path
+                  ])
+
+                {first.rel_path, RenderCache.render(File.read!(full))}
+
+              [] ->
+                {nil, nil}
+            end
+
+          assign(socket,
+            project_files: files,
+            selected_file: selected_file,
+            file_html: file_html
+          )
+      end
+
+    {:noreply, socket}
+  end
+
   # --- PubSub ---
 
   @impl true
@@ -438,6 +504,8 @@ defmodule ClaudePlans.Web.BrowserLive do
             <dt><kbd>Ctrl+d</kbd> <kbd>Ctrl+u</kbd></dt><dd>Scroll content down / up</dd>
             <dt><kbd>d</kbd></dt><dd>Toggle diff view</dd>
             <dt><kbd>v</kbd></dt><dd>Toggle version history</dd>
+            <dt><kbd>e</kbd></dt><dd>Open in editor (PLUG_EDITOR)</dd>
+            <dt><kbd>x</kbd></dt><dd>Delete selected file</dd>
             <dt><kbd>1</kbd> <kbd>2</kbd></dt><dd>Plans / Projects tab</dd>
             <dt><kbd>?</kbd></dt><dd>Toggle this help</dd>
           </dl>
@@ -485,13 +553,23 @@ defmodule ClaudePlans.Web.BrowserLive do
         <div class="cb-file-name">{plan.display_name}</div>
         <div class="cb-file-time">{format_time(plan.modified)}</div>
       </button>
-      <span
-        id={"copy-plan-#{plan.filename}"}
-        class="cb-copy-btn"
-        phx-hook="CopyPath"
-        data-path={plan.path}
-        title={plan.path}
-      >Copy Path</span>
+      <div class="cb-file-actions">
+        <a :if={editor_url(plan.path)} href={editor_url(plan.path)} class="cb-action-btn" title="Open in editor">Edit</a>
+        <span
+          id={"copy-plan-#{plan.filename}"}
+          class="cb-action-btn"
+          phx-hook="CopyPath"
+          data-path={plan.path}
+          title={plan.path}
+        >Copy</span>
+        <button
+          phx-click="delete_file"
+          phx-value-path={plan.path}
+          data-confirm={"Delete #{plan.path}?"}
+          class="cb-action-btn cb-action-btn--danger"
+          title="Delete file"
+        >&times;</button>
+      </div>
     </div>
     <div :if={@plans == []} class="cb-empty">
       No plan files yet.
@@ -529,13 +607,28 @@ defmodule ClaudePlans.Web.BrowserLive do
             <span :if={file.dir} class="cb-file-dir">{file.dir}/</span>{file.name}
           </div>
         </button>
-        <span
-          id={"copy-file-#{file.rel_path}"}
-          class="cb-copy-btn"
-          phx-hook="CopyPath"
-          data-path={Path.join([@projects_dir, @selected_project, file.rel_path])}
-          title={Path.join([@projects_dir, @selected_project, file.rel_path])}
-        >Copy Path</span>
+        <div class="cb-file-actions">
+          <a
+            :if={editor_url(Path.join([@projects_dir, @selected_project, file.rel_path]))}
+            href={editor_url(Path.join([@projects_dir, @selected_project, file.rel_path]))}
+            class="cb-action-btn"
+            title="Open in editor"
+          >Edit</a>
+          <span
+            id={"copy-file-#{file.rel_path}"}
+            class="cb-action-btn"
+            phx-hook="CopyPath"
+            data-path={Path.join([@projects_dir, @selected_project, file.rel_path])}
+            title={Path.join([@projects_dir, @selected_project, file.rel_path])}
+          >Copy</span>
+          <button
+            phx-click="delete_file"
+            phx-value-path={Path.join([@projects_dir, @selected_project, file.rel_path])}
+            data-confirm={"Delete #{Path.join([@projects_dir, @selected_project, file.rel_path])}?"}
+            class="cb-action-btn cb-action-btn--danger"
+            title="Delete file"
+          >&times;</button>
+        </div>
       </div>
       <div :if={@project_files == []} class="cb-empty">No .md files</div>
     </div>
@@ -822,6 +915,37 @@ defmodule ClaudePlans.Web.BrowserLive do
     cond do
       bytes >= 1024 -> "#{Float.round(bytes / 1024, 1)} KB"
       true -> "#{bytes} B"
+    end
+  end
+
+  defp selected_file_path(socket) do
+    case socket.assigns.active_tab do
+      :plans ->
+        case Enum.find(socket.assigns.plans, &(&1.filename == socket.assigns.selected)) do
+          nil -> nil
+          plan -> plan.path
+        end
+
+      :projects ->
+        if socket.assigns.selected_project && socket.assigns.selected_file do
+          Path.join([
+            socket.assigns.projects_dir,
+            socket.assigns.selected_project,
+            socket.assigns.selected_file
+          ])
+        end
+    end
+  end
+
+  defp editor_url(file_path) do
+    case System.get_env("PLUG_EDITOR") do
+      nil ->
+        nil
+
+      template ->
+        template
+        |> String.replace("__FILE__", URI.encode(file_path))
+        |> String.replace("__LINE__", "1")
     end
   end
 end
