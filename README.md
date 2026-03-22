@@ -18,7 +18,9 @@ Browse `~/.claude/plans/` and `~/.claude/projects/*/memory/` in a clean, searcha
 - **Server-side Markdown** — Rendered via MDEx with GitHub-style syntax highlighting
 - **Mermaid diagrams** — Automatic rendering of Mermaid code blocks
 - **Full-text search** — Search across all plan and project files with instant results and in-document match highlighting
-- **Keyboard navigation** — Vim-style keys: j/k to navigate, / to search, n/N to jump between matches, d to toggle diff, v to toggle version history, ? for help overlay
+- **Open in editor** — Click "Edit" or press `e` to open the selected file in your editor via `PLUG_EDITOR`
+- **Delete files** — Remove plan or project files with `x` or the delete button (with confirmation)
+- **Keyboard navigation** — Vim-style keys: j/k to navigate, / to search, n/N to jump between matches, d to toggle diff, v to toggle version history, e to edit, x to delete, ? for help overlay
 - **Live file watching** — Plans auto-reload when files change on disk
 - **Copy path** — Hover any file to copy its absolute path to clipboard
 - **Self-contained** — No Tailwind, no Node.js, no asset pipeline. CSS and JS embedded at compile time
@@ -64,6 +66,7 @@ All configuration is done via environment variables:
 | `NO_BROWSER` | (unset) | Set to `1` to disable auto-opening browser on launch |
 | `PLANS_DIR` | `~/.claude/plans` | Directory containing Claude Code plan files |
 | `PROJECTS_DIR` | `~/.claude/projects` | Directory containing Claude Code project directories |
+| `PLUG_EDITOR` | (unset) | Editor URL template for "Edit" button (e.g., `vscode://file/__FILE__:__LINE__`) |
 
 ### Examples
 
