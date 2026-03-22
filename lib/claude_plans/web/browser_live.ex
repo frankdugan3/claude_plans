@@ -904,7 +904,16 @@ defmodule ClaudePlans.Web.BrowserLive do
   end
 
   defp format_time(posix_time) when is_integer(posix_time) do
-    posix_time |> DateTime.from_unix!() |> Calendar.strftime("%b %d, %H:%M")
+    now = System.os_time(:second)
+    diff = now - posix_time
+
+    cond do
+      diff < 60 -> "just now"
+      diff < 3600 -> "#{div(diff, 60)} min ago"
+      diff < 86400 -> "#{div(diff, 3600)}h ago"
+      diff < 86400 * 30 -> "#{div(diff, 86400)}d ago"
+      true -> posix_time |> DateTime.from_unix!() |> Calendar.strftime("%b %d, %Y")
+    end
   end
 
   defp format_version_time(%DateTime{} = dt) do
