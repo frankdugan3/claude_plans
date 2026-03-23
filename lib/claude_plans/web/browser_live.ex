@@ -487,7 +487,11 @@ defmodule ClaudePlans.Web.BrowserLive do
      )}
   end
 
-  def handle_event("add_annotation", %{"block_path" => block_path, "block_index" => block_index}, socket) do
+  def handle_event(
+        "add_annotation",
+        %{"block_path" => block_path, "block_index" => block_index},
+        socket
+      ) do
     counter = socket.assigns.annotation_counter + 1
     id = "A#{counter}"
 
@@ -531,7 +535,13 @@ defmodule ClaudePlans.Web.BrowserLive do
   end
 
   def handle_event("clear_annotations", _params, socket) do
-    {:noreply, assign(socket, annotations: [], annotation_counter: 0, inspector_mode: false, editing_annotation: nil)}
+    {:noreply,
+     assign(socket,
+       annotations: [],
+       annotation_counter: 0,
+       inspector_mode: false,
+       editing_annotation: nil
+     )}
   end
 
   def handle_event("write_annotations_to_file", _params, socket) do
@@ -591,6 +601,7 @@ defmodule ClaudePlans.Web.BrowserLive do
     has_annotations =
       if selected do
         path = Path.join(ClaudePlans.plans_dir(), selected)
+
         case File.read(path) do
           {:ok, content} -> has_file_annotations?(content)
           _ -> false
@@ -599,7 +610,13 @@ defmodule ClaudePlans.Web.BrowserLive do
         false
       end
 
-    socket = assign(socket, plans: plans, selected: selected, html: html, has_file_annotations: has_annotations)
+    socket =
+      assign(socket,
+        plans: plans,
+        selected: selected,
+        html: html,
+        has_file_annotations: has_annotations
+      )
 
     # Refresh versions for selected plan
     socket =
