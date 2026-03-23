@@ -328,6 +328,18 @@ defmodule ClaudePlans.Web.Layouts do
       });
     }
   };
+  Hooks.WriteAnnotations = {
+    mounted() {
+      this.handleEvent("write_feedback", ({status}) => {
+        if (status === "ok") {
+          const orig = this.el.textContent;
+          this.el.textContent = "Written!";
+          this.el.classList.add("cb-copied");
+          setTimeout(() => { this.el.textContent = orig; this.el.classList.remove("cb-copied"); }, 1200);
+        }
+      });
+    }
+  };
   function scrollHighlightedIntoView() {
     setTimeout(() => {
       const el = document.querySelector('.cb-file-btn--active');

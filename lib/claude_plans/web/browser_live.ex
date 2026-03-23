@@ -55,7 +55,8 @@ defmodule ClaudePlans.Web.BrowserLive do
        annotations: [],
        annotation_counter: 0,
        editing_annotation: nil,
-       show_annotation_panel: false
+       show_annotation_panel: false,
+       has_file_annotations: false
      )}
   end
 
@@ -115,7 +116,8 @@ defmodule ClaudePlans.Web.BrowserLive do
            annotation_counter: 0,
            inspector_mode: false,
            show_annotation_panel: false,
-           editing_annotation: nil
+           editing_annotation: nil,
+           has_file_annotations: has_file_annotations?(content)
          )}
 
       {:error, _} ->
@@ -532,6 +534,35 @@ defmodule ClaudePlans.Web.BrowserLive do
     {:noreply, assign(socket, annotations: [], annotation_counter: 0, inspector_mode: false, editing_annotation: nil)}
   end
 
+  def handle_event("write_annotations_to_file", _params, socket) do
+    path = Path.join(ClaudePlans.plans_dir(), socket.assigns.selected)
+    annotations = socket.assigns.annotations
+
+    case File.read(path) do
+      {:ok, content} ->
+        updated = inject_annotations(content, annotations)
+        File.write!(path, updated)
+        {:noreply, push_event(socket, "write_feedback", %{status: "ok"})}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("strip_annotations_from_file", _params, socket) do
+    path = Path.join(ClaudePlans.plans_dir(), socket.assigns.selected)
+
+    case File.read(path) do
+      {:ok, content} ->
+        cleaned = strip_annotations(content)
+        File.write!(path, cleaned <> "\n")
+        {:noreply, socket}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
   # --- PubSub ---
 
   @impl true
@@ -557,7 +588,18 @@ defmodule ClaudePlans.Web.BrowserLive do
         end
       end
 
-    socket = assign(socket, plans: plans, selected: selected, html: html)
+    has_annotations =
+      if selected do
+        path = Path.join(ClaudePlans.plans_dir(), selected)
+        case File.read(path) do
+          {:ok, content} -> has_file_annotations?(content)
+          _ -> false
+        end
+      else
+        false
+      end
+
+    socket = assign(socket, plans: plans, selected: selected, html: html, has_file_annotations: has_annotations)
 
     # Refresh versions for selected plan
     socket =
@@ -692,6 +734,14 @@ defmodule ClaudePlans.Web.BrowserLive do
         <div :if={@annotations != []} class="cb-annotation-footer">
           <button id="copy-annotations" class="cb-annotation-copy" phx-hook="CopyAnnotations" data-filename={@selected} data-annotations={Jason.encode!(@annotations)}>
             Copy All Annotations
+          </button>
+          <button id="write-annotations" class="cb-annotation-write" phx-hook="WriteAnnotations" phx-click="write_annotations_to_file">
+            Write to Plan File
+          </button>
+        </div>
+        <div :if={@annotations == [] && @has_file_annotations} class="cb-annotation-footer">
+          <button phx-click="strip_annotations_from_file" class="cb-annotation-strip">
+            Strip Annotations from File
           </button>
         </div>
       </div>
@@ -982,6 +1032,36 @@ defmodule ClaudePlans.Web.BrowserLive do
   end
 
   # --- Helpers ---
+
+  @annotation_separator "\n---\n<!-- Annotations by developer -->\n"
+
+  defp inject_annotations(content, annotations) do
+    clean = strip_annotations(content)
+
+    lines =
+      Enum.map(annotations, fn ann ->
+        direction = String.trim(ann.direction)
+
+        if direction == "" do
+          "<!-- #{ann.id} (#{ann.block_path}) -->"
+        else
+          "<!-- #{ann.id} (#{ann.block_path}): #{direction} -->"
+        end
+      end)
+
+    clean <> @annotation_separator <> Enum.join(lines, "\n") <> "\n"
+  end
+
+  defp strip_annotations(content) do
+    case String.split(content, "\n---\n<!-- Annotations by developer -->\n", parts: 2) do
+      [clean, _rest] -> String.trim_trailing(clean)
+      [_content] -> String.trim_trailing(content)
+    end
+  end
+
+  defp has_file_annotations?(content) do
+    String.contains?(content, "<!-- Annotations by developer -->")
+  end
 
   defp navigate_search_result(socket, direction) do
     results = socket.assigns.search_results
