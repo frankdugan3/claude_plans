@@ -8,6 +8,19 @@ Browse `~/.claude/plans/` and `~/.claude/projects/*/memory/` in a clean, searcha
 
 ![Search](assets/search.png)
 
+![Annotations](assets/annotations.png)
+
+### Annotation Output (copy to Claude Code terminal)
+
+```
+Plan annotations for: refactored-greeting-fog.md
+
+A1 (## Context > paragraph): What is the definition of "active membership"?
+A2 (## Context > bullet 3): Can we skip this for MVP?
+A3 (## Context): Add edge case for expired but grace-period memberships
+A4 (## Data Flow > diagram node A "Member checks in"): Where does this validation happen in the code?
+```
+
 ## Features
 
 - **Plans tab** — Browse and read Claude Code plan files with live updates
